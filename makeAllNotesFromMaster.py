@@ -3,8 +3,9 @@ import re
 import nbformat
 import nbconvert
 
-# pass AssignmentNumber as argument to this python program
-## later add CourseID, CourseName and Course Instance as additional args
+## TODOs:
+### pass AssignmentNumber as argument to this python program
+### later add CourseID, CourseName and Course Instance as additional args
 
 def addCourseDetails(NB, CourseID='1MS926', CourseName='Applied Statistics',
                          CourseInstance='Spring 2019, Uppsala University') :
@@ -97,7 +98,6 @@ def makeStudentLabLecNotebookWithoutSOLUTIONandTEST(NB):
     NB['cells']=studentCells
     return NB
 
-# make a student assignment nb called Assignment01.ipynb
 def makeStudentAssignmentNotebookWithProblemsAndWithoutSOLUTIONandTEST(NBList,AssNum):
     '''remove TEST, SOLUTION cells and only make PROBLEMs and Self-Test cells of Assignment AssNum'''
     # to create assignments from the master notebook
@@ -123,7 +123,32 @@ def makeStudentAssignmentNotebookWithProblemsAndWithoutSOLUTIONandTEST(NBList,As
         NB0['cells']=studentCells
     return NB0
 
-# make a solution nb called _soln.ipynb without the "WeTest!"
+
+def makeStudentAssignmentNotebookWithProblemsAndWithSOLUTION(NBList,AssNum):
+    '''keep SOLUTION cells as well as PROBLEMs and Self-Test cells of Assignment AssNum'''
+    # to create assignments from the master notebook
+    NB0=NBList[0].copy()
+    NB0 = addGenericAssignmentAndCourseHeader(NB0,AssNum) # Add generic but Assignment/course-specific header
+    NB0 = addStudentIdAtBeginning(NB0) # Add Student ID Cell
+    studentCells=NB0['cells'][0:3]
+    for NB in NBList:
+        for C in NB['cells']:
+            appendCell=False
+            assignmentNumber=''
+            probCellType=''
+            if 'lx_assignment_number' in C['metadata']:
+                assignmentNumber = C['metadata']['lx_assignment_number']
+                if assignmentNumber==AssNum:
+                    appendCell=True
+            if 'lx_problem_cell_type' in C['metadata']:
+                probCellType = C['metadata']['lx_problem_cell_type']
+                if ("SOLUTION" in probCellType): # not putting TEST cells or ("TEST" in probCellType) ):
+                    appendCell=True
+            if appendCell:
+                studentCells.append(C)
+        NB0['cells']=studentCells
+    return NB0
+
 def makeStudentVersionsFromMasterNotebookNumbers(inputMasterNBNos):
     for inputMasterNBNum in inputMasterNBNos:
         inputMasterNB=inputMasterNBNum+'.ipynb'
@@ -149,12 +174,29 @@ def extractAssignmentFromMasterNotebookNumbers(inputMasterNBNos, AssNum):
     nb2019jpAss = makeStudentAssignmentNotebookWithProblemsAndWithoutSOLUTIONandTEST(masterNotebooks,AssNum)
     nbformat.write(nb2019jpAss,'2019/jp/Assignment0'+AssNum+'.ipynb')
 
+def extractAssignmentWithSolutionsFromMasterNotebookNumbers(inputMasterNBNos, AssNum):
+    '''extract assignment num AssNum from list of master notebook numbers'''
+    masterNotebooks=[]
+    for inputMasterNBNum in inputMasterNBNos:
+        inputMasterNB=inputMasterNBNum+'.ipynb'
+        #read master notebook
+        nb = nbformat.read('master/jp/'+inputMasterNB, as_version=4)
+        nb = addCourseDetails(nb)
+        nb = parseCommentMarksIntoMDAndMetaData(nb)
+        masterNotebooks.append(nb)
+    nb2019jpAss = makeStudentAssignmentNotebookWithProblemsAndWithSOLUTION(masterNotebooks,AssNum)
+    nbformat.write(nb2019jpAss,'2019/jp/Assignment0'+AssNum+'_soln.ipynb')
+
+
 inputMasterNBNos=['00','01','02','03','04']
+
+# make student versions of the notebooks from master notebooks in list above
 makeStudentVersionsFromMasterNotebookNumbers(inputMasterNBNos)
+
+# make a student assignment nb called Assignment01.ipynb
 extractAssignmentFromMasterNotebookNumbers(inputMasterNBNos, '1')
-#processed_nb = parseCommentMarksIntoMDAndMetaData(nb)
 
-#nbformat.write(processed_nb,'/solutions/Assignment01_processed.ipynb')
+# make a student assignment nb with solution called Assignment01_soln.ipynb
+extractAssignmentWithSolutionsFromMasterNotebookNumbers(inputMasterNBNos, '1')
 
-#student_nb = makeStudentNotebookWithoutSOLUTIONandTEST(processed_nb)
-#nbformat.write(student_nb,'/solutions/Assignment01.ipynb')
+

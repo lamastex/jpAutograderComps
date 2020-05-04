@@ -1,4 +1,8 @@
 # jpAutograderComps
+
+looks like most of this is moved to datascience-in github repos. The autgradre parts still need to be absorbed from repos admin/uu/...*AppliedStats*2019...
+When that is done delte this repository...
+
 This is a repository for various components developed around semi/auto-grading a jupyter .ipynb notebook
 
 # Pure Jupyter `.ipynb` Notebooks
